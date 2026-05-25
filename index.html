@@ -42,6 +42,21 @@ html,body{height:100%;background:var(--bg);color:var(--t);font-family:var(--f);f
 .clk{font-size:9px;color:var(--mu)}
 .inst-btn{padding:3px 8px;background:var(--g);color:#000;border:none;font-family:var(--f);font-size:9px;font-weight:bold;border-radius:2px;cursor:pointer;display:none}
 
+/* MARKET INTERNALS */
+.mint{display:flex;align-items:center;gap:0;background:#020406;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.mint::-webkit-scrollbar{display:none}
+.mint-lbl{font-size:7px;color:#4a6080;text-transform:uppercase;letter-spacing:1px;padding:0 10px;border-right:1px solid var(--b);white-space:nowrap;flex-shrink:0}
+.mint-item{display:flex;align-items:center;gap:8px;padding:5px 12px;border-right:1px solid var(--b);flex-shrink:0}
+.mint-sym{font-size:9px;font-weight:bold;color:var(--mu);letter-spacing:.5px;width:36px}
+.mint-val{font-size:13px;font-weight:bold;letter-spacing:.5px;min-width:54px}
+.mint-bar{display:flex;flex-direction:column;gap:2px}
+.mint-press{font-size:7px;letter-spacing:.5px;text-transform:uppercase}
+.mint-spark{width:60px;height:18px;flex-shrink:0}
+.mint-divider{width:1px;background:var(--b);align-self:stretch;flex-shrink:0}
+.mint-status{display:flex;align-items:center;gap:5px;padding:0 12px;flex-shrink:0}
+.mint-status-dot{width:5px;height:5px;border-radius:50%;animation:pulse 2s infinite}
+.mint-status-lbl{font-size:8px;font-weight:bold;letter-spacing:.5px}
+
 /* MODE BAR */
 .mbar{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:var(--s2);border-bottom:1px solid var(--b);flex-shrink:0}
 .mtog{display:flex;border:1px solid var(--b);border-radius:3px;overflow:hidden}
@@ -291,6 +306,30 @@ canvas.sp{width:100%;height:46px;display:block}
     <button class="mbtn" id="bll" onclick="setMode('live')">&#9646; LIVE</button>
   </div>
   <span class="mbadge bp" id="mbadge">PAPER &mdash; SIMULATED</span>
+</div>
+
+<div class="mint">
+  <div class="mint-lbl">NYSE<br>INTERNALS</div>
+  <div class="mint-item">
+    <div class="mint-sym">$TICK</div>
+    <canvas class="mint-spark" id="tickSpark"></canvas>
+    <div class="mint-bar">
+      <div class="mint-val" id="tickVal">+0</div>
+      <div class="mint-press" id="tickPress">NEUTRAL</div>
+    </div>
+  </div>
+  <div class="mint-item">
+    <div class="mint-sym">$ADD</div>
+    <canvas class="mint-spark" id="addSpark"></canvas>
+    <div class="mint-bar">
+      <div class="mint-val" id="addVal">+0</div>
+      <div class="mint-press" id="addPress">NEUTRAL</div>
+    </div>
+  </div>
+  <div class="mint-status">
+    <div class="mint-status-dot" id="mintDot" style="background:var(--mu)"></div>
+    <div class="mint-status-lbl" id="mintLbl" style="color:var(--mu)">LOADING</div>
+  </div>
 </div>
 
 <div class="pstrip" id="pstrip">
@@ -1013,6 +1052,113 @@ function showRisk(){
       </div>
     </div>`;
 }
+
+// ─────────────────────────────────────────────────
+// MARKET INTERNALS — $TICK & $ADD
+// ─────────────────────────────────────────────────
+const MI = (() => {
+  const TICK_MAX = 1500, ADD_MAX = 2000;
+  const HIST = 40;
+  let tick = 0, add = 0;
+  let tickH = Array(HIST).fill(0), addH = Array(HIST).fill(0);
+
+  function step(val, max, volatility, meanRevert) {
+    val += (Math.random() - 0.5) * volatility;
+    val -= val * meanRevert;
+    return Math.max(-max, Math.min(max, val));
+  }
+
+  function color(v, max) {
+    const r = v / max;
+    if (r > 0.5) return '#00d4a0';
+    if (r > 0.2) return '#7ecfb8';
+    if (r > -0.2) return '#4a5568';
+    if (r > -0.5) return '#d4907e';
+    return '#ff4d6d';
+  }
+
+  function pressure(v, max, name) {
+    const r = v / max;
+    if (name === '$TICK') {
+      if (r > 0.6) return 'EXTREME BUY';
+      if (r > 0.3) return 'BUYING';
+      if (r > -0.3) return 'NEUTRAL';
+      if (r > -0.6) return 'SELLING';
+      return 'EXTREME SELL';
+    } else {
+      if (r > 0.5) return 'BREADTH SURGE';
+      if (r > 0.2) return 'ADVANCING';
+      if (r > -0.2) return 'MIXED';
+      if (r > -0.5) return 'DECLINING';
+      return 'BREADTH COLLAPSE';
+    }
+  }
+
+  function drawSparkline(canvasId, history, max) {
+    const c = document.getElementById(canvasId);
+    if (!c) return;
+    const W = c.offsetWidth || 60, H = c.offsetHeight || 18;
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const mid = H / 2;
+    ctx.strokeStyle = '#1c2330';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+    const last = history[history.length - 1];
+    const col = color(last, max);
+    ctx.beginPath();
+    history.forEach((v, i) => {
+      const x = (i / (history.length - 1)) * W;
+      const y = mid - (v / max) * mid * 0.9;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  function update() {
+    tick = step(tick, TICK_MAX, 180, 0.04);
+    add  = step(add,  ADD_MAX,  220, 0.04);
+    tickH.push(tick); if (tickH.length > HIST) tickH.shift();
+    addH.push(add);   if (addH.length  > HIST) addH.shift();
+
+    const tc = color(tick, TICK_MAX), ac = color(add, ADD_MAX);
+    const sign = v => v >= 0 ? '+' : '';
+
+    const tv = document.getElementById('tickVal');
+    const av = document.getElementById('addVal');
+    const tp = document.getElementById('tickPress');
+    const ap = document.getElementById('addPress');
+    const dot = document.getElementById('mintDot');
+    const lbl = document.getElementById('mintLbl');
+    if (!tv) return;
+
+    tv.textContent = sign(tick) + Math.round(tick);
+    tv.style.color = tc;
+    av.textContent = sign(add) + Math.round(add);
+    av.style.color = ac;
+    tp.textContent = pressure(tick, TICK_MAX, '$TICK');
+    tp.style.color = tc;
+    ap.textContent = pressure(add, ADD_MAX, '$ADD');
+    ap.style.color = ac;
+
+    const combined = (tick / TICK_MAX + add / ADD_MAX) / 2;
+    const overallColor = color(combined, 1);
+    const overallLabel = combined > 0.3 ? 'MARKET BUYING' : combined < -0.3 ? 'MARKET SELLING' : 'MARKET NEUTRAL';
+    dot.style.background = overallColor;
+    dot.style.boxShadow = `0 0 4px ${overallColor}`;
+    lbl.textContent = overallLabel;
+    lbl.style.color = overallColor;
+
+    drawSparkline('tickSpark', tickH, TICK_MAX);
+    drawSparkline('addSpark', addH, ADD_MAX);
+  }
+
+  update();
+  setInterval(update, 3000);
+})();
 </script>
 </body>
 </html>
