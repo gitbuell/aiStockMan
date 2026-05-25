@@ -24,6 +24,7 @@ html,body{height:100%;background:var(--bg);color:var(--t);font-family:var(--f);f
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .tick{display:inline-flex;align-items:center;gap:8px;padding:0 20px;font-size:22px;border-right:1px solid var(--b)}
 .tsym{font-weight:bold;color:var(--t)}
+.tnm{font-size:.6em;color:var(--mu);letter-spacing:.3px}
 .tp{color:var(--mu)}
 .tup{color:var(--g)}
 .tdn{color:var(--r)}
@@ -339,7 +340,7 @@ canvas.sp{width:100%;height:46px;display:block}
 <div class="disc-bar">
   <div class="disc-main">&#9888; NOT FINANCIAL ADVICE &mdash; EDUCATIONAL &amp; ENTERTAINMENT PURPOSES ONLY</div>
   <div class="disc-sub">FUCK YO TRADE does not provide investment advice. All signals are simulated. Paper trading uses fake money. Past performance does not predict future results. Billionaire cycle analysis is observational, not predictive. Always consult a licensed financial advisor. Trading involves substantial risk of loss. Never trade money you cannot afford to lose.</div>
-  <div style="text-align:center;font-size:9px;color:#ffffff;margin-top:4px;letter-spacing:2px">I LOVE NESS</div>
+  <div style="text-align:center;font-size:27px;color:#ffffff;margin-top:4px;letter-spacing:2px">I LOVE NESS</div>
 </div>
 </div>
 
@@ -491,21 +492,21 @@ const Engine = (() => {
 // TICKER TAPE
 // ─────────────────────────────────────────────────
 const TAPE=[
-  {s:'BTC',p:104823,c:'+2.31%',up:true},{s:'ETH',p:2641,c:'-1.12%',up:false},
-  {s:'XRP',p:2.18,c:'-0.91%',up:false},{s:'XLM',p:0.382,c:'+1.44%',up:true},
-  {s:'SOL',p:172.4,c:'+4.21%',up:true},{s:'BNB',p:644.2,c:'+0.81%',up:true},
-  {s:'DOGE',p:0.194,c:'+3.24%',up:true},{s:'ADA',p:0.743,c:'-0.62%',up:false},
-  {s:'AAPL',p:213.42,c:'+1.23%',up:true},{s:'TSLA',p:177.8,c:'-2.82%',up:false},
-  {s:'NVDA',p:129.14,c:'+3.09%',up:true},{s:'MSFT',p:448.32,c:'+0.61%',up:true},
-  {s:'AMZN',p:215.6,c:'+1.92%',up:true},{s:'META',p:583.9,c:'+2.11%',up:true},
-  {s:'LTC',p:89.44,c:'+0.91%',up:true},{s:'LINK',p:15.82,c:'+1.62%',up:true},
-  {s:'DOT',p:5.12,c:'-1.22%',up:false},{s:'AVAX',p:38.44,c:'+2.83%',up:true}
+  {s:'BTC',n:'Bitcoin',p:104823,c:'+2.31%',up:true},{s:'ETH',n:'Ethereum',p:2641,c:'-1.12%',up:false},
+  {s:'XRP',n:'Ripple',p:2.18,c:'-0.91%',up:false},{s:'XLM',n:'Stellar',p:0.382,c:'+1.44%',up:true},
+  {s:'SOL',n:'Solana',p:172.4,c:'+4.21%',up:true},{s:'BNB',n:'BNB',p:644.2,c:'+0.81%',up:true},
+  {s:'DOGE',n:'Dogecoin',p:0.194,c:'+3.24%',up:true},{s:'ADA',n:'Cardano',p:0.743,c:'-0.62%',up:false},
+  {s:'AAPL',n:'Apple',p:213.42,c:'+1.23%',up:true},{s:'TSLA',n:'Tesla',p:177.8,c:'-2.82%',up:false},
+  {s:'NVDA',n:'Nvidia',p:129.14,c:'+3.09%',up:true},{s:'MSFT',n:'Microsoft',p:448.32,c:'+0.61%',up:true},
+  {s:'AMZN',n:'Amazon',p:215.6,c:'+1.92%',up:true},{s:'META',n:'Meta',p:583.9,c:'+2.11%',up:true},
+  {s:'LTC',n:'Litecoin',p:89.44,c:'+0.91%',up:true},{s:'LINK',n:'Chainlink',p:15.82,c:'+1.62%',up:true},
+  {s:'DOT',n:'Polkadot',p:5.12,c:'-1.22%',up:false},{s:'AVAX',n:'Avalanche',p:38.44,c:'+2.83%',up:true}
 ];
 function buildTape(){
   const tape=document.getElementById('tape');
   tape.innerHTML=[...TAPE,...TAPE].map(t=>{
     const dec=t.p<1?6:t.p<10?4:t.p<1000?2:0;
-    return `<div class="tick"><span class="tsym">${t.s}</span><span class="tp">$${t.p.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})}</span><span class="${t.up?'tup':'tdn'}">${t.c}</span></div>`;
+    return `<div class="tick"><span class="tsym">${t.s}</span><span class="tnm">${t.n}</span><span class="tp">$${t.p.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})}</span><span class="${t.up?'tup':'tdn'}">${t.c}</span></div>`;
   }).join('');
 }
 buildTape();
