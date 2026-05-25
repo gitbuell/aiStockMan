@@ -527,31 +527,31 @@ document.addEventListener('visibilitychange',()=>{
 // SEEDS
 // ─────────────────────────────────────────────────
 const SEEDS={
-  AAPL:{p:213,d:1.2,v:'89.3B',mc:'3.28T',hi:237,lo:164,type:'stock'},
-  TSLA:{p:178,d:-2.8,v:'62.1B',mc:'567B',hi:299,lo:138,type:'stock'},
-  NVDA:{p:129,d:3.1,v:'312B',mc:'3.17T',hi:153,lo:47,type:'stock'},
-  MSFT:{p:448,d:0.6,v:'34.2B',mc:'3.33T',hi:468,lo:344,type:'stock'},
-  AMZN:{p:215,d:1.9,v:'41.7B',mc:'2.27T',hi:242,lo:162,type:'stock'},
-  GOOGL:{p:178,d:0.8,v:'28.4B',mc:'2.18T',hi:207,lo:155,type:'stock'},
-  META:{p:584,d:2.1,v:'19.2B',mc:'1.48T',hi:638,lo:414,type:'stock'},
-  SPY:{p:592,d:0.4,v:'112B',mc:'—',hi:613,lo:490,type:'stock'},
-  BTC:{p:104800,d:2.3,v:'48.2B',mc:'2.07T',hi:112000,lo:38000,type:'crypto'},
-  ETH:{p:2640,d:-1.1,v:'22.4B',mc:'317B',hi:4100,lo:1500,type:'crypto'},
-  SOL:{p:172,d:4.2,v:'8.3B',mc:'82B',hi:295,lo:60,type:'crypto'},
-  BNB:{p:644,d:0.8,v:'2.1B',mc:'91B',hi:793,lo:210,type:'crypto'},
-  XRP:{p:2.18,d:-0.9,v:'6.4B',mc:'125B',hi:3.84,lo:0.39,type:'crypto'},
-  XLM:{p:0.38,d:1.4,v:'312M',mc:'11.5B',hi:0.73,lo:0.08,type:'crypto'},
-  DOGE:{p:0.194,d:3.2,v:'2.1B',mc:'29B',hi:0.48,lo:0.06,type:'crypto'},
-  ADA:{p:0.74,d:-0.6,v:'892M',mc:'26B',hi:1.22,lo:0.26,type:'crypto'},
-  AVAX:{p:38.4,d:2.8,v:'642M',mc:'16B',hi:69,lo:17,type:'crypto'},
-  LINK:{p:15.8,d:1.6,v:'518M',mc:'10B',hi:24.4,lo:7.2,type:'crypto'},
-  DOT:{p:5.12,d:-1.2,v:'234M',mc:'7.5B',hi:11.8,lo:3.6,type:'crypto'},
-  LTC:{p:89.4,d:0.9,v:'612M',mc:'6.8B',hi:148,lo:52,type:'crypto'},
+  AAPL:{n:'Apple Inc.',p:213,d:1.2,v:'89.3B',mc:'3.28T',hi:237,lo:164,type:'stock'},
+  TSLA:{n:'Tesla Inc.',p:178,d:-2.8,v:'62.1B',mc:'567B',hi:299,lo:138,type:'stock'},
+  NVDA:{n:'Nvidia Corp.',p:129,d:3.1,v:'312B',mc:'3.17T',hi:153,lo:47,type:'stock'},
+  MSFT:{n:'Microsoft Corp.',p:448,d:0.6,v:'34.2B',mc:'3.33T',hi:468,lo:344,type:'stock'},
+  AMZN:{n:'Amazon.com Inc.',p:215,d:1.9,v:'41.7B',mc:'2.27T',hi:242,lo:162,type:'stock'},
+  GOOGL:{n:'Alphabet Inc.',p:178,d:0.8,v:'28.4B',mc:'2.18T',hi:207,lo:155,type:'stock'},
+  META:{n:'Meta Platforms',p:584,d:2.1,v:'19.2B',mc:'1.48T',hi:638,lo:414,type:'stock'},
+  SPY:{n:'S&P 500 ETF',p:592,d:0.4,v:'112B',mc:'—',hi:613,lo:490,type:'stock'},
+  BTC:{n:'Bitcoin',p:104800,d:2.3,v:'48.2B',mc:'2.07T',hi:112000,lo:38000,type:'crypto'},
+  ETH:{n:'Ethereum',p:2640,d:-1.1,v:'22.4B',mc:'317B',hi:4100,lo:1500,type:'crypto'},
+  SOL:{n:'Solana',p:172,d:4.2,v:'8.3B',mc:'82B',hi:295,lo:60,type:'crypto'},
+  BNB:{n:'BNB',p:644,d:0.8,v:'2.1B',mc:'91B',hi:793,lo:210,type:'crypto'},
+  XRP:{n:'Ripple',p:2.18,d:-0.9,v:'6.4B',mc:'125B',hi:3.84,lo:0.39,type:'crypto'},
+  XLM:{n:'Stellar',p:0.38,d:1.4,v:'312M',mc:'11.5B',hi:0.73,lo:0.08,type:'crypto'},
+  DOGE:{n:'Dogecoin',p:0.194,d:3.2,v:'2.1B',mc:'29B',hi:0.48,lo:0.06,type:'crypto'},
+  ADA:{n:'Cardano',p:0.74,d:-0.6,v:'892M',mc:'26B',hi:1.22,lo:0.26,type:'crypto'},
+  AVAX:{n:'Avalanche',p:38.4,d:2.8,v:'642M',mc:'16B',hi:69,lo:17,type:'crypto'},
+  LINK:{n:'Chainlink',p:15.8,d:1.6,v:'518M',mc:'10B',hi:24.4,lo:7.2,type:'crypto'},
+  DOT:{n:'Polkadot',p:5.12,d:-1.2,v:'234M',mc:'7.5B',hi:11.8,lo:3.6,type:'crypto'},
+  LTC:{n:'Litecoin',p:89.4,d:0.9,v:'612M',mc:'6.8B',hi:148,lo:52,type:'crypto'},
 };
 function getPD(t){
-  const b=SEEDS[t]||{p:100+Math.random()*900,d:(Math.random()-.5)*8,v:'1B',mc:'20B',hi:150,lo:70,type:assetType};
+  const b=SEEDS[t]||{n:'',p:100+Math.random()*900,d:(Math.random()-.5)*8,v:'1B',mc:'20B',hi:150,lo:70,type:assetType};
   const j=(Math.random()-.5)*.025,dec=b.p<1?6:b.p<10?4:2;
-  return{price:(b.p*(1+j)).toFixed(dec),change:(b.d+(Math.random()-.5)*.5).toFixed(2),volume:b.v,mktcap:b.mc,high52:b.hi,low52:b.lo,type:b.type};
+  return{name:b.n||'',price:(b.p*(1+j)).toFixed(dec),change:(b.d+(Math.random()-.5)*.5).toFixed(2),volume:b.v,mktcap:b.mc,high52:b.hi,low52:b.lo,type:b.type};
 }
 
 // ─────────────────────────────────────────────────
@@ -671,7 +671,7 @@ function renderResult(ticker,pd,d){
   document.getElementById('lp').innerHTML=`
     <div class="card">
       <div class="phead">
-        <div><div class="tkn">${ticker}</div><div style="font-size:7px;color:var(--mu)">${isCrypto?'DIGITAL ASSET':'EQUITY'}</div></div>
+        <div><div class="tkn">${ticker}</div>${pd.name?`<div style="font-size:11px;color:var(--t);font-weight:bold;margin-top:1px">${pd.name}</div>`:''}<div style="font-size:7px;color:var(--mu);margin-top:1px">${isCrypto?'DIGITAL ASSET':'EQUITY'}</div></div>
         <span class="abadge ${isCrypto?'bcry':'bstk'}">${isCrypto?'CRYPTO':'STOCK'}</span>
       </div>
       <div class="pmain">$${pd.price}</div>
