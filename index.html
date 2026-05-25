@@ -63,6 +63,39 @@ html,body{height:100%;background:var(--bg);color:var(--t);font-family:var(--f);f
 .pab:active{background:var(--a);color:#000}
 .pab.rd{border-color:var(--r);color:var(--r)}
 .pab.mu{border-color:var(--mu);color:var(--mu)}
+.pab.bl{border-color:var(--bl);color:var(--bl)}
+
+/* RISK DASHBOARD */
+.risk-card{background:var(--s1);border:1px solid var(--b);border-radius:3px;padding:10px;margin-bottom:8px}
+.risk-title{font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.risk-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.rh{border-radius:3px;padding:8px;text-align:center;border:1px solid var(--dim);background:var(--bg)}
+.rh-lbl{font-size:7px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.rh-val{font-size:15px;font-weight:bold}
+.rh-sub{font-size:7px;color:var(--mu);margin-top:1px}
+.dd-bar-wrap{margin-bottom:10px}
+.dd-bar-track{height:10px;background:var(--dim);border-radius:3px;overflow:hidden;position:relative}
+.dd-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.dd-zones{display:flex;font-size:7px;color:var(--mu);margin-top:3px;justify-content:space-between}
+.dd-marker{position:absolute;top:0;height:100%;width:2px;background:rgba(255,255,255,.25)}
+.exp-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--dim)}
+.exp-row:last-child{border-bottom:none}
+.exp-tk{font-size:9px;font-weight:bold;width:42px;flex-shrink:0}
+.exp-bar-wrap{flex:1;height:6px;background:var(--dim);border-radius:3px;overflow:hidden}
+.exp-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.exp-pct{font-size:8px;font-weight:bold;width:32px;text-align:right;flex-shrink:0}
+.exp-pnl{font-size:8px;width:58px;text-align:right;flex-shrink:0}
+.risk-alert{padding:6px 8px;border-radius:2px;font-size:8px;margin-bottom:5px;border:1px solid}
+.alert-warn{background:#1a1200;border-color:#4a3800;color:var(--a)}
+.alert-crit{background:#1a0000;border-color:#4a0000;color:var(--r)}
+.alert-ok{background:#001a0e;border-color:#003d20;color:var(--g)}
+.risk-score-wrap{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg);border:1px solid var(--dim);border-radius:3px;margin-bottom:8px}
+.risk-score-num{font-size:28px;font-weight:bold;line-height:1;flex-shrink:0}
+.risk-score-info{flex:1}
+.risk-score-label{font-size:9px;font-weight:bold;letter-spacing:.5px}
+.risk-score-desc{font-size:8px;color:var(--mu);margin-top:2px;line-height:1.4}
+.risk-gauge{height:4px;background:var(--dim);border-radius:2px;overflow:hidden;margin-top:5px}
+.risk-gauge-fill{height:100%;border-radius:2px;transition:width .8s ease}
 
 /* SEARCH */
 .srch{display:flex;align-items:center;gap:7px;padding:7px 12px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
@@ -267,6 +300,7 @@ canvas.sp{width:100%;height:46px;display:block}
   <div class="pact">
     <button class="pab" onclick="openTrade()" id="ptbtn">+ TRADE</button>
     <button class="pab mu" onclick="showPos()">POSITIONS</button>
+    <button class="pab bl" onclick="showRisk()">RISK</button>
     <button class="pab rd" onclick="resetPort()">RESET</button>
   </div>
 </div>
@@ -522,7 +556,7 @@ function getPD(t){
 // STATE
 // ─────────────────────────────────────────────────
 let assetType='stock',mode='paper',analyzing=false,jOpen=false;
-let jLog=[],port={cash:100000,startCash:100000,positions:{}};
+let jLog=[],port={cash:100000,startCash:100000,peakEquity:100000,positions:{}};
 let deferredPrompt=null;
 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('instBtn').style.display='inline-block';setTimeout(showToast,3000);});
@@ -763,6 +797,7 @@ function addJEntry(ticker,pd,d){
 function calcEq(){let e=port.cash;for(const[tk,p]of Object.entries(port.positions)){const c=p.cp||(SEEDS[tk]?.p)||100;e+=p.qty*c;}return e;}
 function updatePortBar(){
   const eq=calcEq(),pnl=eq-port.startCash,pct=(pnl/port.startCash)*100;
+  if(eq>port.peakEquity)port.peakEquity=eq;
   document.getElementById('pcash').textContent='$'+port.cash.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('peq').textContent='$'+eq.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const pe=document.getElementById('ppnl');
@@ -846,7 +881,136 @@ function closeP(ticker,curP){
   port.cash+=total;delete port.positions[ticker];
   logTrade(ticker,'SELL',pos.qty,price,total,pnl);updatePortBar();showPos();
 }
-function resetPort(){if(!confirm('Reset to $100,000?'))return;port={cash:100000,startCash:100000,positions:{}};updatePortBar();}
+function resetPort(){if(!confirm('Reset to $100,000?'))return;port={cash:100000,startCash:100000,peakEquity:100000,positions:{}};updatePortBar();}
+
+function showRisk(){
+  const eq=calcEq();
+  const pnl=eq-port.startCash;
+  const drawdown=port.peakEquity>0?((port.peakEquity-eq)/port.peakEquity)*100:0;
+  const dd=Math.max(0,drawdown);
+  const cashPct=(port.cash/eq)*100;
+  const invested=100-cashPct;
+
+  // Per-position exposure
+  const positions=Object.entries(port.positions);
+  const posRows=positions.map(([tk,p])=>{
+    const cur=p.cp||(SEEDS[tk]?.p)||100;
+    const mktVal=p.qty*cur;
+    const expPct=(mktVal/eq)*100;
+    const posColor=expPct>15?'var(--r)':expPct>8?'var(--a)':'var(--g)';
+    const posPnl=(cur-p.avgPrice)*p.qty;
+    const dec=cur<1?6:cur<10?4:2;
+    return {tk,expPct,posColor,posPnl,mktVal,avgPrice:p.avgPrice,cur,dec};
+  }).sort((a,b)=>b.expPct-a.expPct);
+
+  // Alerts
+  const alerts=[];
+  if(dd>=20)alerts.push({cls:'alert-crit',msg:`&#9888; CRITICAL: Drawdown ${dd.toFixed(1)}% exceeds 20% limit — stop trading, review strategy.`});
+  else if(dd>=10)alerts.push({cls:'alert-warn',msg:`&#9888; WARNING: Drawdown ${dd.toFixed(1)}% approaching 20% limit.`});
+  else alerts.push({cls:'alert-ok',msg:`&#10003; Drawdown ${dd.toFixed(1)}% — within safe limits (&lt;10%).`});
+
+  posRows.forEach(p=>{
+    if(p.expPct>20)alerts.push({cls:'alert-crit',msg:`&#9888; ${p.tk} concentration ${p.expPct.toFixed(1)}% — exceeds 20% single-position limit.`});
+    else if(p.expPct>10)alerts.push({cls:'alert-warn',msg:`&#9888; ${p.tk} concentration ${p.expPct.toFixed(1)}% — above 10% threshold.`});
+  });
+
+  if(invested>80)alerts.push({cls:'alert-warn',msg:`&#9888; ${invested.toFixed(1)}% of equity deployed — consider holding cash reserve.`});
+  if(positions.length>=8)alerts.push({cls:'alert-warn',msg:`&#9888; ${positions.length} open positions — high complexity, monitor correlation.`});
+
+  // Risk score (0–100, lower = safer)
+  let riskScore=0;
+  riskScore+=Math.min(40,dd*2);           // drawdown up to 40pts
+  riskScore+=Math.min(25,invested*.3);    // deployment up to 25pts
+  const maxConc=posRows.length?posRows[0].expPct:0;
+  riskScore+=Math.min(20,maxConc*1);      // concentration up to 20pts
+  riskScore+=Math.min(15,positions.length*1.5); // count up to 15pts
+  riskScore=Math.round(Math.min(100,riskScore));
+  const riskLabel=riskScore<25?'LOW':riskScore<50?'MODERATE':riskScore<75?'ELEVATED':'CRITICAL';
+  const riskColor=riskScore<25?'var(--g)':riskScore<50?'var(--a)':riskScore<75?'#ff8c00':'var(--r)';
+  const riskDesc=riskScore<25?'Portfolio is well-managed. Drawdown controlled, exposure balanced.'
+    :riskScore<50?'Moderate risk exposure. Monitor positions and drawdown closely.'
+    :riskScore<75?'Elevated risk. Consider reducing position sizes or cutting losers.'
+    :'Critical risk level. Immediate portfolio review required.';
+
+  // Drawdown bar color
+  const ddColor=dd<10?'var(--g)':dd<20?'var(--a)':'var(--r)';
+
+  // Wins/losses from journal
+  const trades=jLog.filter(e=>e.d&&e.d.signal);
+  const buys=trades.filter(e=>e.d.signal==='BUY').length;
+  const sells=trades.filter(e=>e.d.signal==='SELL').length;
+
+  document.getElementById('lp').innerHTML=`
+    <div class="risk-card">
+      <div class="risk-title" style="color:var(--bl)">&#9650; Risk Dashboard &mdash; Live Exposure</div>
+
+      ${alerts.map(a=>`<div class="risk-alert ${a.cls}">${a.msg}</div>`).join('')}
+
+      <div class="risk-score-wrap">
+        <div class="risk-score-num" style="color:${riskColor}">${riskScore}</div>
+        <div class="risk-score-info">
+          <div class="risk-score-label" style="color:${riskColor}">RISK SCORE &mdash; ${riskLabel}</div>
+          <div class="risk-score-desc">${riskDesc}</div>
+          <div class="risk-gauge"><div class="risk-gauge-fill" style="width:${riskScore}%;background:${riskColor}"></div></div>
+        </div>
+      </div>
+
+      <div class="risk-hero">
+        <div class="rh">
+          <div class="rh-lbl">Drawdown</div>
+          <div class="rh-val" style="color:${ddColor}">${dd.toFixed(1)}%</div>
+          <div class="rh-sub">Limit: 20%</div>
+        </div>
+        <div class="rh">
+          <div class="rh-lbl">Deployed</div>
+          <div class="rh-val" style="color:${invested>80?'var(--r)':invested>50?'var(--a)':'var(--g)'}">${invested.toFixed(1)}%</div>
+          <div class="rh-sub">Cash: ${cashPct.toFixed(1)}%</div>
+        </div>
+        <div class="rh">
+          <div class="rh-lbl">Peak Equity</div>
+          <div class="rh-val" style="font-size:10px;color:var(--t)">$${port.peakEquity.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
+          <div class="rh-sub">Now: $${eq.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
+        </div>
+      </div>
+
+      <div class="dd-bar-wrap">
+        <div style="font-size:7px;color:var(--mu);margin-bottom:3px;letter-spacing:.5px">DRAWDOWN FROM PEAK &mdash; ${dd.toFixed(2)}%</div>
+        <div class="dd-bar-track">
+          <div class="dd-bar-fill" style="width:${Math.min(100,dd*5)}%;background:${ddColor}"></div>
+          <div class="dd-marker" style="left:50%"></div>
+          <div class="dd-marker" style="left:100%"></div>
+        </div>
+        <div class="dd-zones"><span>0%</span><span style="color:var(--a)">10% WARN</span><span style="color:var(--r)">20% LIMIT</span></div>
+      </div>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-title" style="color:var(--bl)">&#9650; Position Exposure &mdash; ${positions.length} Open</div>
+      ${posRows.length?posRows.map(p=>`
+        <div class="exp-row">
+          <div class="exp-tk">${p.tk}</div>
+          <div class="exp-bar-wrap"><div class="exp-bar" style="width:${Math.min(100,p.expPct*4)}%;background:${p.posColor}"></div></div>
+          <div class="exp-pct" style="color:${p.posColor}">${p.expPct.toFixed(1)}%</div>
+          <div class="exp-pnl" style="color:${p.posPnl>=0?'var(--g)':'var(--r)'}">${p.posPnl>=0?'+':''}$${p.posPnl.toFixed(2)}</div>
+        </div>`).join('')
+      :`<div class="empty" style="height:60px"><div class="emptxt">No open positions</div></div>`}
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-title" style="color:var(--bl)">&#9650; Session Stats</div>
+      <div class="tg">
+        <div class="tr"><span class="tn">Total P&amp;L</span><span class="tv" style="color:${pnl>=0?'var(--g)':'var(--r)'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</span></div>
+        <div class="tr"><span class="tn">Return</span><span class="tv" style="color:${pnl>=0?'var(--g)':'var(--r)'}">${pnl>=0?'+':''}${((pnl/port.startCash)*100).toFixed(2)}%</span></div>
+        <div class="tr"><span class="tn">Max Drawdown</span><span class="tv" style="color:${ddColor}">${dd.toFixed(2)}%</span></div>
+        <div class="tr"><span class="tn">Peak Equity</span><span class="tv">$${port.peakEquity.toFixed(2)}</span></div>
+        <div class="tr"><span class="tn">Analyses Run</span><span class="tv" style="color:var(--bl)">${jLog.length}</span></div>
+        <div class="tr"><span class="tn">BUY / SELL Signals</span><span class="tv">${buys} / ${sells}</span></div>
+        <div class="tr"><span class="tn">Open Positions</span><span class="tv">${positions.length}</span></div>
+        <div class="tr"><span class="tn">Cash Reserve</span><span class="tv pos">$${port.cash.toFixed(2)}</span></div>
+        <div class="tr" style="grid-column:1/-1"><span class="tn">Position Limit (5% rule)</span><span class="tv" style="color:var(--a)">$${(eq*.05).toFixed(2)} max per trade</span></div>
+      </div>
+    </div>`;
+}
 </script>
 </body>
 </html>
