@@ -294,6 +294,7 @@ canvas.sp{width:100%;height:46px;display:block}
   </div>
   <div class="hdr-r">
     <span class="clk" id="clk">--:--:-- UTC</span>
+    <span id="liveTag" style="display:none;font-size:7px;color:var(--g);border:1px solid var(--g);padding:1px 5px;border-radius:2px;letter-spacing:.5px;font-weight:bold"></span>
     <span class="dot dot-p" id="mdot"></span>
     <span id="mlbl" style="font-size:8px;color:var(--a);font-weight:bold">PAPER</span>
     <button class="inst-btn" id="instBtn" onclick="triggerInstall()">INSTALL</button>
@@ -1052,6 +1053,79 @@ function showRisk(){
       </div>
     </div>`;
 }
+
+// ─────────────────────────────────────────────────
+// LIVE PRICE FETCHER
+// ─────────────────────────────────────────────────
+const CG_IDS={BTC:'bitcoin',ETH:'ethereum',XRP:'ripple',XLM:'stellar',SOL:'solana',BNB:'binancecoin',DOGE:'dogecoin',ADA:'cardano',AVAX:'avalanche-2',LINK:'chainlink',DOT:'polkadot',LTC:'litecoin'};
+const STOCK_SYMS=['AAPL','TSLA','NVDA','MSFT','AMZN','GOOGL','META','SPY'];
+let liveAssets=0;
+
+async function fetchCrypto(){
+  try{
+    const ids=Object.values(CG_IDS).join(',');
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    if(!r.ok)return;
+    const data=await r.json();
+    Object.entries(CG_IDS).forEach(([sym,id])=>{
+      if(!data[id]||!SEEDS[sym])return;
+      const p=data[id].usd, d=parseFloat((data[id].usd_24h_change||0).toFixed(2));
+      SEEDS[sym].p=p; SEEDS[sym].d=d;
+      if(p>SEEDS[sym].hi)SEEDS[sym].hi=parseFloat((p*1.05).toFixed(6));
+      if(p<SEEDS[sym].lo)SEEDS[sym].lo=parseFloat((p*0.95).toFixed(6));
+      const t=TAPE.find(x=>x.s===sym);
+      if(t){t.p=p;t.c=(d>=0?'+':'')+d.toFixed(2)+'%';t.up=d>=0;}
+      liveAssets++;
+    });
+    syncTapeDisplay();
+    setLiveBadge();
+  }catch(e){}
+}
+
+async function fetchStocks(){
+  try{
+    const syms=STOCK_SYMS.join(',');
+    const r=await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&fields=regularMarketPrice,regularMarketChangePercent,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName`,{headers:{Accept:'application/json'}});
+    if(!r.ok)return;
+    const data=await r.json();
+    (data.quoteResponse?.result||[]).forEach(q=>{
+      const sym=q.symbol;
+      if(!SEEDS[sym])return;
+      const p=q.regularMarketPrice, d=parseFloat((q.regularMarketChangePercent||0).toFixed(2));
+      SEEDS[sym].p=p; SEEDS[sym].d=d;
+      if(q.fiftyTwoWeekHigh)SEEDS[sym].hi=q.fiftyTwoWeekHigh;
+      if(q.fiftyTwoWeekLow)SEEDS[sym].lo=q.fiftyTwoWeekLow;
+      const t=TAPE.find(x=>x.s===sym);
+      if(t){t.p=p;t.c=(d>=0?'+':'')+d.toFixed(2)+'%';t.up=d>=0;}
+      liveAssets++;
+    });
+    syncTapeDisplay();
+    setLiveBadge();
+  }catch(e){}
+}
+
+function syncTapeDisplay(){
+  tickEls.forEach((el,i)=>{
+    const d=TAPE[i%TAPE.length];
+    const dec=d.p<1?6:d.p<10?4:d.p<1000?2:0;
+    const priceEl=el.querySelector('.tp');
+    const chgEl=el.querySelector('.tup,.tdn');
+    if(priceEl)priceEl.textContent='$'+d.p.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    if(chgEl){chgEl.className=d.up?'tup':'tdn';chgEl.textContent=d.c;}
+  });
+}
+
+function setLiveBadge(){
+  const el=document.getElementById('liveTag');
+  if(el){el.textContent=`LIVE ${liveAssets} ASSETS`;el.style.display='inline';}
+}
+
+async function fetchLivePrices(){
+  liveAssets=0;
+  await Promise.allSettled([fetchCrypto(),fetchStocks()]);
+}
+fetchLivePrices();
+setInterval(fetchLivePrices,60000);
 
 // ─────────────────────────────────────────────────
 // MARKET INTERNALS — $TICK & $ADD
